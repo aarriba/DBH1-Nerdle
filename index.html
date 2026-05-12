@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nerdle Euskaraz Pro</title>
+    <style>
+        :root {
+            --correct: #6aaa64;
+            --present: #c9b458;
+            --absent: #787c7e;
+            --bg: #ffffff;
+            --border: #d3d6da;
+            --key-bg: #d3d6da;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; touch-action: manipulation; }
+        h1 { color: #1a1a1a; margin-bottom: 10px; font-size: 1.8rem; }
+        #grid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin-bottom: 20px; }
+        .row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .tile { width: 45px; height: 45px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: bold; border-radius: 4px; transition: background-color 0.3s; }
+        
+        /* Colores */
+        .correct { background-color: var(--correct) !important; color: white; border-color: var(--correct) !important; }
+        .present { background-color: var(--present) !important; color: white; border-color: var(--present) !important; }
+        .absent { background-color: var(--absent) !important; color: white; border-color: var(--absent) !important; }
+
+        #keyboard-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px; }
+        .key-row { display: flex; justify-content: center; gap: 5px; width: 100%; }
+        .key { flex: 1; height: 50px; background: var(--key-bg); border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .key.wide { flex: 2; }
+        
+        .message { margin: 15px 0; font-weight: bold; height: 24px; color: #d35400; text-align: center; }
+        #reset-btn { padding: 12px 24px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<h1>NERDLE EUSKARAZ</h1>
+<div id="grid"></div>
+<div class="message" id="msg"></div>
+
+<div id="keyboard-container">
+    <!-- Números a la izquierda, Operaciones a la derecha -->
+    <div class="key-row">
+        <button class="key" id="key-1" onclick="press('1')">1</button>
+        <button class="key" id="key-2" onclick="press('2')">2</button>
+        <button class="key" id="key-3" onclick="press('3')">3</button>
+        <button class="key" id="key-4" onclick="press('4')">4</button>
+        <button class="key" id="key-5" onclick="press('5')">5</button>
+        <button class="key" id="key-+" onclick="press('+')">+</button>
+        <button class="key" id="key--" onclick="press('-')">-</button>
+    </div>
+    <div class="key-row">
+        <button class="key" id="key-6" onclick="press('6')">6</button>
+        <button class="key" id="key-7" onclick="press('7')">7</button>
+        <button class="key" id="key-8" onclick="press('8')">8</button>
+        <button class="key" id="key-9" onclick="press('9')">9</button>
+        <button class="key" id="key-0" onclick="press('0')">0</button>
+        <button class="key" id="key-*" onclick="press('*')">*</button>
+        <button class="key" id="key-/" onclick="press('/')">/</button>
+    </div>
+    <div class="key-row">
+        <button class="key wide" onclick="del()">←</button>
+        <button class="key" id="key-=" onclick="press('=')">=</button>
+        <button class="key wide" onclick="check()">SARTU</button>
+    </div>
+</div>
+
+<button id="reset-btn" onclick="initGame()">BERREGIN</button>
+
+<script>
+    let target = "";
+    let currentRow = 0;
+    let currentTile = 0;
+    let guesses = [];
+    let gameOver = false;
+
+    // Escuchar teclado físico
+    document.addEventListener('keydown', (e) => {
+        if (gameOver) return;
+        if (e.key >= '0' && e.key <= '9') press(e.key);
+        if (['+', '-', '*', '/', '='].includes(e.key)) press(e.key);
+        if (e.key === 'Enter') check();
+        if (e.key === 'Backspace') del();
+    });
+
+    function generateEquation() {
+        const ops = ['+', '-', '*'];
+        while (true) {
+            let n1 = Math.floor(Math.random() * 90) + 1;
+            let op = ops[Math.floor(Math.random() * ops.length)];
+            let n2 = Math.floor(Math.random() * 20) + 1;
+            let res;
+            if (op === '+') res = n1 + n2;
+            if (op === '-') res = n1 - n2;
+            if (op === '*') res = n1 * n2;
+            let eq = `${n1}${op}${n2}=${res}`;
+            if (eq.length === 7 && res >= 0) return eq;
+        }
+    }
+
+    function initGame() {
+        target = generateEquation();
+        currentRow = 0;
+        currentTile = 0;
+        guesses = ["", "", "", "", "", ""];
+        gameOver = false;
+        document.getElementById('msg').innerText = "";
+        
+        // Limpiar Grid
+        const grid = document.getElementById('grid');
+        grid.innerHTML = "";
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement('div');
+            row.className = 'row';
+            for (let j = 0; j < 7; j++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.id = `tile-${i}-${j}`;
+                row.appendChild(tile);
+            }
+            grid.appendChild(row);
+        }
+
+        // Limpiar colores teclado
+        document.querySelectorAll('.key').forEach(k => {
+            k.classList.remove('correct', 'present', 'absent');
+        });
+        console.log("Soluzioa:", target);
+    }
+
+    function press(key) {
+        if (!gameOver && currentTile < 7) {
+            guesses[currentRow] += key;
+            document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = key;
+            currentTile++;
+        }
+    }
+
+    function del() {
+        if (!gameOver && currentTile > 0) {
+            currentTile--;
+            guesses[currentRow] = guesses[currentRow].slice(0, -1);
+            document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = "";
+        }
+    }
+
+    function updateKeyboardColor(char, status) {
+        const keyBtn = document.getElementById(`key-${char}`);
+        if (!keyBtn) return;
+        
+        if (status === 'correct') {
+            keyBtn.classList.add('correct');
+        } else if (status === 'present' && !keyBtn.classList.contains('correct')) {
+            keyBtn.classList.add('present');
+        } else if (status === 'absent' && !keyBtn.classList.contains('correct') && !keyBtn.classList.contains('present')) {
+            keyBtn.classList.add('absent');
+        }
+    }
+
+    function check() {
+        if (gameOver) return;
+        const guess = guesses[currentRow];
+        const msg = document.getElementById('msg');
+        
+        if (guess.length !== 7) {
+            msg.innerText = "7 karaktere behar dira!";
+            return;
+        }
+
+        try {
+            const parts = guess.split('=');
+            if (parts.length !== 2 || eval(parts[0]) !== parseInt(parts[1])) {
+                msg.innerText = "Ekuazioa ez da zuzena!";
+                return;
+            }
+        } catch (e) {
+            msg.innerText = "Errore matematikoa!";
+            return;
+        }
+
+        msg.innerText = "";
+        let targetArr = target.split('');
+        const guessArr = guess.split('');
+        const results = Array(7).fill('absent');
+
+        // 1. Verdes
+        for (let i = 0; i < 7; i++) {
+            if (guessArr[i] === targetArr[i]) {
+                results[i] = 'correct';
+                targetArr[i] = null;
+            }
+        }
+
+        // 2. Naranjas
+        for (let i = 0; i < 7; i++) {
+            if (results[i] === 'correct') continue;
+            const index = targetArr.indexOf(guessArr[i]);
+            if (index !== -1) {
+                results[i] = 'present';
+                targetArr[index] = null;
+            }
+        }
+
+        // Aplicar colores a celdas y teclado
+        for (let i = 0; i < 7; i++) {
+            const char = guessArr[i];
+            const status = results[i];
+            document.getElementById(`tile-${currentRow}-${i}`).classList.add(status);
+            updateKeyboardColor(char, status);
+        }
+
+        if (guess === target) {
+            msg.innerText = "ZORIONAK! Asmatu duzu!";
+            gameOver = true;
+        } else if (currentRow === 5) {
+            msg.innerText = "Galduta! Soluzioa: " + target;
+            gameOver = true;
+        } else {
+            currentRow++;
+            currentTile = 0;
+        }
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
