@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nerdle Math Pro / Nerdle Euskaraz Pro</title>
+    <title>Nerdle Euskaraz Pro</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Canvas Confetti -->
+    <!-- Canvas Confetti for Victories -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
@@ -75,16 +75,16 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <!-- TOP CONTAINER (Disclaimer Header + Lang Switch) -->
+    <!-- TOP CONTAINER (Mandatory Disclaimer Header + Language Switch) -->
     <div class="relative z-20">
         <!-- Disclaimer Header Required Rule 2b -->
-        <header class="bg-slate-800 text-slate-300 text-xs py-2 px-4 text-center border-b border-slate-700 leading-tight">
+        <header class="bg-slate-800 text-slate-300 text-[11px] sm:text-xs py-2 px-4 text-center border-b border-slate-700 leading-tight shadow-inner">
             <p id="disclaimer-text" class="max-w-4xl mx-auto"></p>
         </header>
 
         <!-- Global Language Button & Navigation Top Bar -->
         <div class="max-w-4xl mx-auto px-4 pt-3 flex justify-between items-center">
-            <button onclick="openScreen('menu')" class="text-slate-700 hover:text-indigo-600 font-semibold text-sm flex items-center gap-2 transition bg-white hover:bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm active:scale-95">
+            <button onclick="openScreen('menu')" class="text-slate-700 hover:text-indigo-600 font-semibold text-xs sm:text-sm flex items-center gap-2 transition bg-white hover:bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm active:scale-95">
                 <i class="fa-solid fa-house text-indigo-600"></i>
                 <span id="nav-home-text">Hasiera</span>
             </button>
@@ -106,7 +106,7 @@
                 <p class="text-slate-500 text-sm mt-1" id="app-tagline">Deszifratu ekuazio matematikoa saio gutxitan!</p>
             </div>
 
-            <!-- Menu Buttons Options (ONLY: Klasikoa | Praktikatu | Estatistikak | Arauak eta Laguntza) -->
+            <!-- Menu Buttons Options (Strict Order: Klasikoa | Praktikatu | Estatistikak | Arauak eta Laguntza) -->
             <div class="space-y-3">
                 <!-- 1. MODO CLÁSICO -->
                 <button onclick="startClassicGame()" class="w-full bg-white hover:bg-indigo-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
@@ -116,7 +116,7 @@
                         </div>
                         <div class="text-left">
                             <div class="text-base text-slate-900" id="btn-classic-title">Modu Klasikoa</div>
-                            <div class="text-xs text-slate-500" id="btn-classic-desc">7 karaktereko ekuazio matematikoak</div>
+                            <div class="text-xs text-slate-500" id="btn-classic-desc">7 karaktereko ekuazio matematikoak (edo 6 eta 8)</div>
                         </div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
@@ -150,7 +150,7 @@
                     <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
                 </button>
 
-                <!-- 4. NORMAS Y AYUDA (LAST BUTTON) -->
+                <!-- 4. NORMAS Y AYUDA (MUST BE LAST OPTION) -->
                 <button onclick="toggleRulesModal(true)" class="w-full bg-white hover:bg-sky-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
                     <div class="flex items-center gap-3">
                         <div class="bg-sky-500 text-white p-3 rounded-xl group-hover:scale-105 transition">
@@ -169,17 +169,28 @@
         <!-- 2. GAME SCREEN -->
         <section id="screen-game" class="w-full max-w-lg hidden flex flex-col items-center">
             
-            <!-- Game Top Controls -->
-            <div class="w-full flex justify-between items-center mb-3 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm">
-                <span class="text-xs font-bold text-slate-700 ml-2" id="lbl-mode-indicator">Modu Klasikoa (7)</span>
+            <!-- Quick In-Game Difficulty Switcher (Default: Classic / 7) -->
+            <div class="w-full bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm mb-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <!-- Difficulty Tabs -->
+                <div class="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto text-xs font-bold">
+                    <button id="diff-6" onclick="changeDifficulty(6)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
+                        Erraza (6)
+                    </button>
+                    <button id="diff-7" onclick="changeDifficulty(7)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm">
+                        Klasikoa (7)
+                    </button>
+                    <button id="diff-8" onclick="changeDifficulty(8)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
+                        Aurreratua (8)
+                    </button>
+                </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <button onclick="initGame()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-rotate-right"></i>
                         <span id="btn-reset-txt">Berregin</span>
                     </button>
 
-                    <!-- RULES BUTTON AS LAST CONTROL ITEM -->
+                    <!-- Rules Modal Button -->
                     <button onclick="toggleRulesModal(true)" class="bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-700 border border-sky-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-info text-sky-600"></i>
                         <span id="btn-top-rules-txt">Arauak</span>
@@ -187,7 +198,7 @@
                 </div>
             </div>
 
-            <!-- Message Notification Bar -->
+            <!-- Message Notification Area -->
             <div id="game-msg" class="h-8 text-center text-sm font-bold text-amber-600 flex items-center justify-center transition-all mb-2"></div>
 
             <!-- Nerdle Grid -->
@@ -336,7 +347,7 @@
 
     <!-- FOOTER -->
     <footer class="text-center py-3 text-xs text-slate-400 border-t border-slate-200 bg-white relative z-10">
-        Nerdle Educational App &copy; 2026 - ESO & Bachillerato
+        Nerdle Educational App &copy; 2026 - ESO & Batxilergoa
     </footer>
 
     <!-- JS APP LOGIC -->
@@ -344,23 +355,25 @@
         // --- TRANSLATION DICTIONARY ---
         const i18n = {
             eu: {
-                disclaimer: "a.arriba@irakasle.ehu.eus-ek sortutako aplikazioa, kodea sortzeko Adimen Artifizialaren (AA) laguntzaz (azken berrikuspena: 2026/10/16). Tresna honek akatsak izan ditzake, beraz, iradokizun edo zuzenketa guztiak posta elektroniko horren bidez bideratuko dira.",
+                disclaimer: "Aplicación creada por a.arriba@irakasle.ehu.eus con la ayuda de una AA para generar el código (última revisión el 16 de octubre de 2026). Esta herramienta puede tener fallos, así que todas las sugerencias o correcciones se atenderán por dicho correo electrónico.",
                 langBtn: "Castellano",
                 navHome: "Hasiera",
                 mainTitle: "NERDLE EUSKARAZ PRO",
                 appSubtitle: "DBH & Batxilergoa",
                 appTagline: "Deszifratu ekuazio matematikoa saio gutxitan!",
                 btnClassicTitle: "Modu Klasikoa",
-                btnClassicDesc: "7 karaktereko ekuazio matematikoak",
+                btnClassicDesc: "7 karaktereko ekuazio matematikoak (edo 6 eta 8)",
                 btnPracticeTitle: "Praktikatu",
                 btnPracticeDesc: "Kalkulu mentala azkartzeko ariketak",
                 btnStatsTitle: "Estatistikak",
                 btnStatsDesc: "Zure lorpenak eta erregistroak",
                 btnRulesTitle: "Arauak eta Laguntza",
                 btnRulesDesc: "Nola jokatu eta koloreen azalpena",
-                lblModeIndicator: "Modu Klasikoa (7 karaktere)",
                 btnResetTxt: "Berregin",
                 btnTopRulesTxt: "Arauak",
+                diff6: "Erraza (6)",
+                diff7: "Klasikoa (7)",
+                diff8: "Aurreratua (8)",
                 
                 // Rules Modal Translations
                 modalRulesTitle: "Arauak eta Laguntza",
@@ -388,7 +401,7 @@
                 practiceSub: "Erez ebatzi eragiketa hauek trebetasuna hobetzeko.",
                 btnCheckPractice: "Egiaztatu",
                 btnNextPractice: "Beste Ariketa Bat",
-                msgShort: "7 karaktere behar dira!",
+                msgShort: "karaktere behar dira!",
                 msgInvalidEq: "Ekuazioa ez da matematikoki zuzena!",
                 msgWin: "ZORIONAK! Asmatu duzu!",
                 msgLose: "Galduta! Soluzioa: ",
@@ -396,23 +409,25 @@
                 practiceWrong: "Okerra. Saiatu berriro!"
             },
             es: {
-                disclaimer: "Aplicación creada por a.arriba@irakasle.ehu.eus con la ayuda de una IA para generar el código (última revisión el 16/10/2026). Esta herramienta puede tener fallos, así que todas las sugerencias o correcciones se atenderán por dicho correo electrónico.",
+                disclaimer: "Aplicación creada por a.arriba@irakasle.ehu.eus con la ayuda de una IA para generar el código (última revisión el 16 de octubre de 2026). Esta herramienta puede tener fallos, así que todas las sugerencias o correcciones se atenderán por dicho correo electrónico.",
                 langBtn: "Euskera",
                 navHome: "Inicio",
                 mainTitle: "NERDLE MATH PRO",
                 appSubtitle: "ESO y Bachillerato",
                 appTagline: "¡Descifra la ecuación matemática en pocos intentos!",
                 btnClassicTitle: "Modo Clásico",
-                btnClassicDesc: "Ecuaciones matemáticas de 7 caracteres",
+                btnClassicDesc: "Ecuaciones matemáticas de 7 caracteres (o 6 y 8)",
                 btnPracticeTitle: "Practicar",
                 btnPracticeDesc: "Ejercicios de cálculo mental rápido",
                 btnStatsTitle: "Estadísticas",
                 btnStatsDesc: "Tus logros y registros",
                 btnRulesTitle: "Reglas y Ayuda",
                 btnRulesDesc: "Cómo jugar y explicación de colores",
-                lblModeIndicator: "Modo Clásico (7 caracteres)",
                 btnResetTxt: "Reiniciar",
                 btnTopRulesTxt: "Reglas",
+                diff6: "Fácil (6)",
+                diff7: "Clásico (7)",
+                diff8: "Avanzado (8)",
                 
                 // Rules Modal Translations
                 modalRulesTitle: "Reglas y Ayuda",
@@ -440,7 +455,7 @@
                 practiceSub: "Resuelve operaciones mentalmente para mejorar tu agilidad.",
                 btnCheckPractice: "Comprobar",
                 btnNextPractice: "Otro Ejercicio",
-                msgShort: "¡Se requieren 7 caracteres!",
+                msgShort: "caracteres requeridos!",
                 msgInvalidEq: "¡Ecuación matemáticamente incorrecta!",
                 msgWin: "¡ENHORABUENA! ¡Has acertado!",
                 msgLose: "¡Lástima! La solución era: ",
@@ -451,7 +466,7 @@
 
         // --- GLOBAL STATE ---
         let currentLang = 'eu';
-        const eqLength = 7; // Fixed Classic Length
+        let eqLength = 7; // Default: Classic (7 tiles)
         let target = "";
         let currentRow = 0;
         let currentTile = 0;
@@ -475,7 +490,28 @@
 
         function startClassicGame() {
             openScreen('game');
+            eqLength = 7; // Ensure default is classic 7 tiles
+            updateDifficultyUI();
             initGame();
+        }
+
+        function changeDifficulty(length) {
+            eqLength = length;
+            updateDifficultyUI();
+            initGame();
+        }
+
+        function updateDifficultyUI() {
+            [6, 7, 8].forEach(len => {
+                const btn = document.getElementById(`diff-${len}`);
+                if (btn) {
+                    if (len === eqLength) {
+                        btn.className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm font-bold";
+                    } else {
+                        btn.className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium";
+                    }
+                }
+            });
         }
 
         // --- MODAL CONTROLLER ---
@@ -516,10 +552,12 @@
             document.getElementById('btn-rules-desc').innerText = lang.btnRulesDesc;
 
             // Game Controls
-            document.getElementById('lbl-mode-indicator').innerText = lang.lblModeIndicator;
             document.getElementById('btn-reset-txt').innerText = lang.btnResetTxt;
             document.getElementById('btn-top-rules-txt').innerText = lang.btnTopRulesTxt;
             document.getElementById('key-enter').innerText = lang.btnEnter;
+            document.getElementById('diff-6').innerText = lang.diff6;
+            document.getElementById('diff-7').innerText = lang.diff7;
+            document.getElementById('diff-8').innerText = lang.diff8;
 
             // Modal Rules
             document.getElementById('modal-rules-title').innerHTML = `<i class="fa-solid fa-circle-info text-indigo-600"></i> ${lang.modalRulesTitle}`;
@@ -617,15 +655,18 @@
 
             document.getElementById('game-msg').innerText = "";
 
+            // Dynamic grid tile dimensions based on length
+            const tileSizeClass = eqLength === 8 ? 'w-9 h-10 sm:w-10 sm:h-11 text-base' : 'w-10 h-11 sm:w-11 sm:h-12 text-lg';
+
             // Rebuild Grid
             const grid = document.getElementById('grid');
             grid.innerHTML = "";
             for (let i = 0; i < 6; i++) {
                 const row = document.createElement('div');
-                row.className = 'flex gap-1.5 justify-center';
+                row.className = 'flex gap-1 sm:gap-1.5 justify-center';
                 for (let j = 0; j < eqLength; j++) {
                     const tile = document.createElement('div');
-                    tile.className = 'w-11 h-12 text-lg border-2 border-slate-300 rounded-xl flex items-center justify-center font-extrabold text-slate-800 bg-white shadow-sm transition-all';
+                    tile.className = `${tileSizeClass} border-2 border-slate-300 rounded-xl flex items-center justify-center font-extrabold text-slate-800 bg-white shadow-sm transition-all`;
                     tile.id = `tile-${i}-${j}`;
                     row.appendChild(tile);
                 }
@@ -679,7 +720,7 @@
             const lang = i18n[currentLang];
 
             if (guess.length !== eqLength) {
-                msg.innerText = lang.msgShort;
+                msg.innerText = `${eqLength} ${lang.msgShort}`;
                 return;
             }
 
