@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nerdle Euskaraz Pro</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Victories -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+
+        /* Explicit cursor pointer for all buttons & interactive elements */
+        button, [role="button"] {
+            cursor: pointer !important;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Color Tokens for Game Grid */
+        :root {
+            --color-correct: #10B981; /* Green */
+            --color-present: #F59E0B; /* Yellow/Orange */
+            --color-absent: #6B7280;  /* Gray */
+        }
+
+        /* Tile Animations */
+        .tile-pop {
+            animation: pop 0.15s ease-in-out;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        .tile-flip {
+            animation: flip 0.5s ease forwards;
+        }
+
+        @keyframes flip {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); }
+        }
+
+        .correct {
+            background-color: var(--color-correct) !important;
+            color: white !important;
+            border-color: var(--color-correct) !important;
+        }
+
+        .present {
+            background-color: var(--color-present) !important;
+            color: white !important;
+            border-color: var(--color-present) !important;
+        }
+
+        .absent {
+            background-color: var(--color-absent) !important;
+            color: white !important;
+            border-color: var(--color-absent) !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- TOP CONTAINER (Mandatory Disclaimer Header + Language Switch) -->
+    <div class="relative z-20">
+        <!-- Disclaimer Header Required Rule 2b -->
+        <header class="bg-slate-800 text-slate-300 text-[11px] sm:text-xs py-2 px-4 text-center border-b border-slate-700 leading-tight shadow-inner">
+            <p id="disclaimer-text" class="max-w-4xl mx-auto"></p>
+        </header>
+
+        <!-- Global Language Button & Navigation Top Bar -->
+        <div class="max-w-4xl mx-auto px-4 pt-3 flex justify-between items-center">
+            <button onclick="openScreen('menu')" class="text-slate-700 hover:text-indigo-600 font-semibold text-xs sm:text-sm flex items-center gap-2 transition bg-white hover:bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm active:scale-95">
+                <i class="fa-solid fa-house text-indigo-600"></i>
+                <span id="nav-home-text">Hasiera</span>
+            </button>
+            <button onclick="toggleLanguage()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-globe"></i>
+                <span id="lang-btn-text">ES / EU</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="max-w-4xl mx-auto px-4 py-4 w-full flex-grow flex flex-col justify-center items-center relative z-10">
+
+        <!-- 1. MAIN MENU SCREEN -->
+        <section id="screen-menu" class="w-full max-w-xl text-center py-2">
+            <div class="mb-6">
+                <span class="bg-indigo-100 text-indigo-700 text-xs font-bold uppercase px-3 py-1 rounded-full tracking-wider" id="app-subtitle">DBH & Batxilergoa</span>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 tracking-tight" id="main-app-title">NERDLE EUSKARAZ PRO</h1>
+                <p class="text-slate-500 text-sm mt-1" id="app-tagline">Deszifratu ekuazio matematikoa saio gutxitan!</p>
+            </div>
+
+            <!-- Menu Buttons Options (Strict Order: Klasikoa | Praktikatu | Estatistikak | Arauak eta Laguntza) -->
+            <div class="space-y-3">
+                <!-- 1. MODO CLÁSICO -->
+                <button onclick="startClassicGame()" class="w-full bg-white hover:bg-indigo-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-600 text-white p-3 rounded-xl group-hover:scale-105 transition">
+                            <i class="fa-solid fa-star text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base text-slate-900" id="btn-classic-title">Modu Klasikoa</div>
+                            <div class="text-xs text-slate-500" id="btn-classic-desc">7 karaktereko ekuazio matematikoak (edo 6 eta 8)</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
+                </button>
+
+                <!-- 2. PRÁCTICA -->
+                <button onclick="openScreen('practice')" class="w-full bg-white hover:bg-purple-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-purple-600 text-white p-3 rounded-xl group-hover:scale-105 transition">
+                            <i class="fa-solid fa-calculator text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base text-slate-900" id="btn-practice-title">Praktikatu</div>
+                            <div class="text-xs text-slate-500" id="btn-practice-desc">Kalkulu mentala azkartzeko ariketak</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
+                </button>
+
+                <!-- 3. ESTADÍSTICAS -->
+                <button onclick="openScreen('stats')" class="w-full bg-white hover:bg-amber-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-amber-500 text-white p-3 rounded-xl group-hover:scale-105 transition">
+                            <i class="fa-solid fa-chart-column text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base text-slate-900" id="btn-stats-title">Estatistikak</div>
+                            <div class="text-xs text-slate-500" id="btn-stats-desc">Zure lorpenak eta erregistroak</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
+                </button>
+
+                <!-- 4. NORMAS Y AYUDA (MUST BE LAST OPTION) -->
+                <button onclick="toggleRulesModal(true)" class="w-full bg-white hover:bg-sky-50 active:scale-[0.99] border border-slate-200 text-slate-800 font-bold p-4 rounded-2xl shadow-sm flex items-center justify-between transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-sky-500 text-white p-3 rounded-xl group-hover:scale-105 transition">
+                            <i class="fa-solid fa-circle-question text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base text-slate-900" id="btn-rules-title">Arauak eta Laguntza</div>
+                            <div class="text-xs text-slate-500" id="btn-rules-desc">Nola jokatu eta koloreen azalpena</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:translate-x-1 transition"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. GAME SCREEN -->
+        <section id="screen-game" class="w-full max-w-lg hidden flex flex-col items-center">
+            
+            <!-- Quick In-Game Difficulty Switcher (Default: Classic / 7) -->
+            <div class="w-full bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm mb-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <!-- Difficulty Tabs -->
+                <div class="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto text-xs font-bold">
+                    <button id="diff-6" onclick="changeDifficulty(6)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
+                        Erraza (6)
+                    </button>
+                    <button id="diff-7" onclick="changeDifficulty(7)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm">
+                        Klasikoa (7)
+                    </button>
+                    <button id="diff-8" onclick="changeDifficulty(8)" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">
+                        Aurreratua (8)
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button onclick="initGame()" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span id="btn-reset-txt">Berregin</span>
+                    </button>
+
+                    <!-- Rules Modal Button -->
+                    <button onclick="toggleRulesModal(true)" class="bg-sky-50 hover:bg-sky-100 active:scale-95 text-sky-700 border border-sky-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-sky-600"></i>
+                        <span id="btn-top-rules-txt">Arauak</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Message Notification Area -->
+            <div id="game-msg" class="h-8 text-center text-sm font-bold text-amber-600 flex items-center justify-center transition-all mb-2"></div>
+
+            <!-- Nerdle Grid -->
+            <div id="grid" class="flex flex-col gap-1.5 mb-5"></div>
+
+            <!-- Virtual Keyboard -->
+            <div id="keyboard-container" class="w-full max-w-md flex flex-col gap-1.5">
+                <div class="flex justify-center gap-1 w-full">
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-1" onclick="press('1')">1</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-2" onclick="press('2')">2</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-3" onclick="press('3')">3</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-4" onclick="press('4')">4</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-5" onclick="press('5')">5</button>
+                    <button class="key flex-1 h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-indigo-900 text-lg transition" id="key-+" onclick="press('+')">+</button>
+                    <button class="key flex-1 h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-indigo-900 text-lg transition" id="key--" onclick="press('-')">-</button>
+                </div>
+                <div class="flex justify-center gap-1 w-full">
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-6" onclick="press('6')">6</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-7" onclick="press('7')">7</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-8" onclick="press('8')">8</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-9" onclick="press('9')">9</button>
+                    <button class="key flex-1 h-12 bg-slate-200 hover:bg-slate-300 active:scale-95 rounded-lg font-bold text-slate-800 text-lg transition" id="key-0" onclick="press('0')">0</button>
+                    <button class="key flex-1 h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-indigo-900 text-lg transition" id="key-*" onclick="press('*')">*</button>
+                    <button class="key flex-1 h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-indigo-900 text-lg transition" id="key-/" onclick="press('/')">/</button>
+                </div>
+                <div class="flex justify-center gap-1 w-full">
+                    <button class="key flex-[1.5] h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-slate-700 text-base transition flex items-center justify-center" onclick="del()">
+                        <i class="fa-solid fa-backspace"></i>
+                    </button>
+                    <button class="key flex-1 h-12 bg-slate-300 hover:bg-slate-400 active:scale-95 rounded-lg font-bold text-indigo-900 text-lg transition" id="key-=" onclick="press('=')">=</button>
+                    <button class="key flex-[2] h-12 bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-lg font-bold text-white text-xs sm:text-sm transition tracking-wider" onclick="check()" id="key-enter">SARTU</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. STATISTICS SCREEN -->
+        <section id="screen-stats" class="w-full max-w-lg hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 border-b pb-3 flex items-center justify-center gap-2" id="stats-heading">
+                <i class="fa-solid fa-chart-line text-amber-500"></i> Estatistikak
+            </h2>
+
+            <!-- Summary KPI -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="text-3xl font-black text-indigo-600" id="stat-played">0</div>
+                    <div class="text-xs font-semibold text-slate-500 mt-1" id="lbl-stat-played">Jokatuta</div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="text-3xl font-black text-emerald-600" id="stat-wins">0%</div>
+                    <div class="text-xs font-semibold text-slate-500 mt-1" id="lbl-stat-wins">% Irabaziak</div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="text-3xl font-black text-amber-500" id="stat-streak">0</div>
+                    <div class="text-xs font-semibold text-slate-500 mt-1" id="lbl-stat-streak">Raxa</div>
+                </div>
+            </div>
+
+            <button onclick="resetStats()" class="text-xs text-rose-500 hover:text-rose-700 font-semibold mb-6 underline transition" id="btn-reset-stats">
+                Estatistikak Garbitu
+            </button>
+
+            <button onclick="openScreen('menu')" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3 rounded-xl transition text-center text-sm shadow-sm" id="btn-back-stats">
+                Atzera Menura
+            </button>
+        </section>
+
+        <!-- 4. PRACTICE SCREEN -->
+        <section id="screen-practice" class="w-full max-w-lg hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+            <h2 class="text-2xl font-bold text-slate-900 mb-2 flex items-center justify-center gap-2" id="practice-heading">
+                <i class="fa-solid fa-brain text-purple-600"></i> Praktikatu
+            </h2>
+            <p class="text-xs text-slate-500 mb-6" id="practice-sub">Erez ebatzi eragiketa hauek trebetasuna hobetzeko.</p>
+
+            <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-6 mb-6 shadow-inner">
+                <div id="practice-question" class="text-3xl font-extrabold text-purple-900 tracking-wider"></div>
+            </div>
+
+            <div class="flex gap-2 mb-4">
+                <input type="number" id="practice-input" placeholder="?" class="flex-1 border-2 border-slate-300 focus:border-purple-600 rounded-xl px-4 py-2 text-center text-xl font-bold outline-none transition">
+                <button onclick="checkPractice()" class="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold px-6 py-2 rounded-xl text-sm transition shadow-sm" id="btn-check-practice">
+                    Egiaztatu
+                </button>
+            </div>
+
+            <div id="practice-msg" class="h-6 text-sm font-bold mb-4"></div>
+
+            <button onclick="generatePracticeQuestion()" class="w-full bg-slate-100 hover:bg-slate-200 active:scale-[0.99] text-slate-700 font-bold py-2.5 rounded-xl text-xs transition mb-3" id="btn-next-practice">
+                Beste Ariketa Bat
+            </button>
+
+            <button onclick="openScreen('menu')" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3 rounded-xl transition text-center text-sm shadow-sm" id="btn-back-practice">
+                Atzera Menura
+            </button>
+        </section>
+
+    </main>
+
+    <!-- RULES MODAL DIALOG -->
+    <div id="modal-rules" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl border border-slate-200 relative text-xs text-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+            <button onclick="toggleRulesModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="font-bold text-slate-900 text-base flex items-center gap-2 border-b border-slate-200 pb-2" id="modal-rules-title">
+                <i class="fa-solid fa-circle-info text-indigo-600"></i> Arauak eta Laguntza
+            </h3>
+
+            <p class="leading-relaxed" id="modal-rules-desc">
+                Asmatu ekuazio sekretua 6 saiakeratan!
+            </p>
+
+            <div class="space-y-2">
+                <div class="font-semibold text-slate-800" id="modal-rules-list-title">Arau nagusiak:</div>
+                <ul class="list-disc pl-4 space-y-1 leading-tight" id="modal-rules-list">
+                    <li>Zenbakiak (0-9) eta eragiketak (+, -, *, /, =) erabili.</li>
+                    <li>Ekuazioak baliozkoa izan behar du orokorrean.</li>
+                    <li>Eragiketen lehentasuna errespetatzen da (* eta / lehenago).</li>
+                </ul>
+            </div>
+
+            <div class="space-y-2">
+                <div class="font-semibold text-slate-800" id="modal-color-title">Koloreen esanahia:</div>
+                
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                    <div class="w-6 h-6 rounded bg-emerald-500 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">3</div>
+                    <span id="modal-color-green"><strong>Berdea:</strong> Toki egokian dago.</span>
+                </div>
+
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                    <div class="w-6 h-6 rounded bg-amber-500 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">+</div>
+                    <span id="modal-color-yellow"><strong>Horia:</strong> Badago baina beste toki batean.</span>
+                </div>
+
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                    <div class="w-6 h-6 rounded bg-slate-500 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">8</div>
+                    <span id="modal-color-gray"><strong>Grisa:</strong> Ez dago ekuazioan.</span>
+                </div>
+            </div>
+
+            <button onclick="toggleRulesModal(false)" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2.5 rounded-xl transition text-center text-xs shadow-sm" id="btn-close-modal">
+                Ulertuta
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-3 text-xs text-slate-400 border-t border-slate-200 bg-white relative z-10">
+        Nerdle Educational App &copy; 2026 - ESO & Batxilergoa
+    </footer>
+
+    <!-- JS APP LOGIC -->
+    <script>
+        // --- TRANSLATION DICTIONARY ---
+        const i18n = {
+            eu: {
+                disclaimer: "Aplicación creada por a.arriba@irakasle.ehu.eus con la ayuda de una AA para generar el código (última revisión el 16 de octubre de 2026). Esta herramienta puede tener fallos, así que todas las sugerencias o correcciones se atenderán por dicho correo electrónico.",
+                langBtn: "Castellano",
+                navHome: "Hasiera",
+                mainTitle: "NERDLE EUSKARAZ PRO",
+                appSubtitle: "DBH & Batxilergoa",
+                appTagline: "Deszifratu ekuazio matematikoa saio gutxitan!",
+                btnClassicTitle: "Modu Klasikoa",
+                btnClassicDesc: "7 karaktereko ekuazio matematikoak (edo 6 eta 8)",
+                btnPracticeTitle: "Praktikatu",
+                btnPracticeDesc: "Kalkulu mentala azkartzeko ariketak",
+                btnStatsTitle: "Estatistikak",
+                btnStatsDesc: "Zure lorpenak eta erregistroak",
+                btnRulesTitle: "Arauak eta Laguntza",
+                btnRulesDesc: "Nola jokatu eta koloreen azalpena",
+                btnResetTxt: "Berregin",
+                btnTopRulesTxt: "Arauak",
+                diff6: "Erraza (6)",
+                diff7: "Klasikoa (7)",
+                diff8: "Aurreratua (8)",
+                
+                // Rules Modal Translations
+                modalRulesTitle: "Arauak eta Laguntza",
+                modalRulesDesc: "Asmatu ekuazio sekretua 6 saiakeratan! Saiakera bakoitzak baliozko ekuazio matematikoa izan behar du.",
+                modalRulesListTitle: "Arau nagusiak:",
+                modalRulesList: [
+                    "Zenbakiak (0-9) eta eragiketak (+, -, *, /, =) erabili.",
+                    "Ekuazioak baliozkoa izan behar du orokorrean.",
+                    "Eragiketen lehentasuna errespetatzen da (* eta / lehenago)."
+                ],
+                modalColorTitle: "Koloreen esanahia:",
+                modalColorGreen: "<strong>Berdea:</strong> Karakterea ekuazioan dago eta toki egokian dago.",
+                modalColorYellow: "<strong>Horia:</strong> Karakterea ekuazioan dago, baina beste toki batean.",
+                modalColorGray: "<strong>Grisa:</strong> Karakterea ez dago ekuazio sekretuan.",
+                btnCloseModal: "Ulertuta",
+
+                btnEnter: "SARTU",
+                btnBack: "Atzera Menura",
+                statsHeading: "Estatistikak",
+                lblStatPlayed: "Jokatuta",
+                lblStatWins: "% Irabaziak",
+                lblStatStreak: "Raxa",
+                btnResetStats: "Estatistikak Garbitu",
+                practiceHeading: "Praktikatu",
+                practiceSub: "Erez ebatzi eragiketa hauek trebetasuna hobetzeko.",
+                btnCheckPractice: "Egiaztatu",
+                btnNextPractice: "Beste Ariketa Bat",
+                msgShort: "karaktere behar dira!",
+                msgInvalidEq: "Ekuazioa ez da matematikoki zuzena!",
+                msgWin: "ZORIONAK! Asmatu duzu!",
+                msgLose: "Galduta! Soluzioa: ",
+                practiceCorrect: "Oso ondo! Zuzena da.",
+                practiceWrong: "Okerra. Saiatu berriro!"
+            },
+            es: {
+                disclaimer: "Aplicación creada por a.arriba@irakasle.ehu.eus con la ayuda de una IA para generar el código (última revisión el 16 de octubre de 2026). Esta herramienta puede tener fallos, así que todas las sugerencias o correcciones se atenderán por dicho correo electrónico.",
+                langBtn: "Euskera",
+                navHome: "Inicio",
+                mainTitle: "NERDLE MATH PRO",
+                appSubtitle: "ESO y Bachillerato",
+                appTagline: "¡Descifra la ecuación matemática en pocos intentos!",
+                btnClassicTitle: "Modo Clásico",
+                btnClassicDesc: "Ecuaciones matemáticas de 7 caracteres (o 6 y 8)",
+                btnPracticeTitle: "Practicar",
+                btnPracticeDesc: "Ejercicios de cálculo mental rápido",
+                btnStatsTitle: "Estadísticas",
+                btnStatsDesc: "Tus logros y registros",
+                btnRulesTitle: "Reglas y Ayuda",
+                btnRulesDesc: "Cómo jugar y explicación de colores",
+                btnResetTxt: "Reiniciar",
+                btnTopRulesTxt: "Reglas",
+                diff6: "Fácil (6)",
+                diff7: "Clásico (7)",
+                diff8: "Avanzado (8)",
+                
+                // Rules Modal Translations
+                modalRulesTitle: "Reglas y Ayuda",
+                modalRulesDesc: "¡Adivina la ecuación secreta en 6 intentos! Cada intento debe ser una ecuación matemática válida.",
+                modalRulesListTitle: "Reglas principales:",
+                modalRulesList: [
+                    "Usa números (0-9) y operaciones (+, -, *, /, =).",
+                    "La ecuación entera debe ser matemáticamente correcta.",
+                    "Se respeta la jerarquía de operaciones (* y / primero)."
+                ],
+                modalColorTitle: "Significado de colores:",
+                modalColorGreen: "<strong>Verde:</strong> El carácter está en la posición correcta.",
+                modalColorYellow: "<strong>Amarillo:</strong> Está en la ecuación, pero en otra posición.",
+                modalColorGray: "<strong>Gris:</strong> El carácter no está en la ecuación.",
+                btnCloseModal: "Entendido",
+
+                btnEnter: "ENVIAR",
+                btnBack: "Volver al Menú",
+                statsHeading: "Estadísticas",
+                lblStatPlayed: "Jugadas",
+                lblStatWins: "% Victorias",
+                lblStatStreak: "Racha",
+                btnResetStats: "Borrar Estadísticas",
+                practiceHeading: "Practicar",
+                practiceSub: "Resuelve operaciones mentalmente para mejorar tu agilidad.",
+                btnCheckPractice: "Comprobar",
+                btnNextPractice: "Otro Ejercicio",
+                msgShort: "caracteres requeridos!",
+                msgInvalidEq: "¡Ecuación matemáticamente incorrecta!",
+                msgWin: "¡ENHORABUENA! ¡Has acertado!",
+                msgLose: "¡Lástima! La solución era: ",
+                practiceCorrect: "¡Muy bien! Es correcto.",
+                practiceWrong: "Incorrecto. ¡Inténtalo de nuevo!"
+            }
+        };
+
+        // --- GLOBAL STATE ---
+        let currentLang = 'eu';
+        let eqLength = 7; // Default: Classic (7 tiles)
+        let target = "";
+        let currentRow = 0;
+        let currentTile = 0;
+        let guesses = [];
+        let gameOver = false;
+        let practiceAns = 0;
+
+        // --- NAVIGATION CONTROLLER ---
+        function openScreen(screenId) {
+            document.querySelectorAll('main > section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+            const targetScreen = document.getElementById(`screen-${screenId}`);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+            }
+            if (screenId === 'stats') {
+                loadStats();
+            }
+        }
+
+        function startClassicGame() {
+            openScreen('game');
+            eqLength = 7; // Ensure default is classic 7 tiles
+            updateDifficultyUI();
+            initGame();
+        }
+
+        function changeDifficulty(length) {
+            eqLength = length;
+            updateDifficultyUI();
+            initGame();
+        }
+
+        function updateDifficultyUI() {
+            [6, 7, 8].forEach(len => {
+                const btn = document.getElementById(`diff-${len}`);
+                if (btn) {
+                    if (len === eqLength) {
+                        btn.className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-sm font-bold";
+                    } else {
+                        btn.className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 font-medium";
+                    }
+                }
+            });
+        }
+
+        // --- MODAL CONTROLLER ---
+        function toggleRulesModal(show) {
+            const modal = document.getElementById('modal-rules');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // --- LANGUAGE SWITCHER ---
+        function toggleLanguage() {
+            currentLang = currentLang === 'eu' ? 'es' : 'eu';
+            updateLanguageUI();
+        }
+
+        function updateLanguageUI() {
+            const lang = i18n[currentLang];
+
+            // Disclaimer Header & Top Bar
+            document.getElementById('disclaimer-text').innerText = lang.disclaimer;
+            document.getElementById('lang-btn-text').innerText = lang.langBtn;
+            document.getElementById('nav-home-text').innerText = lang.navHome;
+
+            // Main Menu
+            document.getElementById('main-app-title').innerText = lang.mainTitle;
+            document.getElementById('app-subtitle').innerText = lang.appSubtitle;
+            document.getElementById('app-tagline').innerText = lang.appTagline;
+            document.getElementById('btn-classic-title').innerText = lang.btnClassicTitle;
+            document.getElementById('btn-classic-desc').innerText = lang.btnClassicDesc;
+            document.getElementById('btn-practice-title').innerText = lang.btnPracticeTitle;
+            document.getElementById('btn-practice-desc').innerText = lang.btnPracticeDesc;
+            document.getElementById('btn-stats-title').innerText = lang.btnStatsTitle;
+            document.getElementById('btn-stats-desc').innerText = lang.btnStatsDesc;
+            document.getElementById('btn-rules-title').innerText = lang.btnRulesTitle;
+            document.getElementById('btn-rules-desc').innerText = lang.btnRulesDesc;
+
+            // Game Controls
+            document.getElementById('btn-reset-txt').innerText = lang.btnResetTxt;
+            document.getElementById('btn-top-rules-txt').innerText = lang.btnTopRulesTxt;
+            document.getElementById('key-enter').innerText = lang.btnEnter;
+            document.getElementById('diff-6').innerText = lang.diff6;
+            document.getElementById('diff-7').innerText = lang.diff7;
+            document.getElementById('diff-8').innerText = lang.diff8;
+
+            // Modal Rules
+            document.getElementById('modal-rules-title').innerHTML = `<i class="fa-solid fa-circle-info text-indigo-600"></i> ${lang.modalRulesTitle}`;
+            document.getElementById('modal-rules-desc').innerText = lang.modalRulesDesc;
+            document.getElementById('modal-rules-list-title').innerText = lang.modalRulesListTitle;
+            document.getElementById('modal-color-title').innerText = lang.modalColorTitle;
+            document.getElementById('modal-color-green').innerHTML = lang.modalColorGreen;
+            document.getElementById('modal-color-yellow').innerHTML = lang.modalColorYellow;
+            document.getElementById('modal-color-gray').innerHTML = lang.modalColorGray;
+            document.getElementById('btn-close-modal').innerText = lang.btnCloseModal;
+            
+            const modalListEl = document.getElementById('modal-rules-list');
+            modalListEl.innerHTML = lang.modalRulesList.map(r => `<li>${r}</li>`).join('');
+
+            // Stats Screen
+            document.getElementById('stats-heading').innerHTML = `<i class="fa-solid fa-chart-line text-amber-500"></i> ${lang.statsHeading}`;
+            document.getElementById('lbl-stat-played').innerText = lang.lblStatPlayed;
+            document.getElementById('lbl-stat-wins').innerText = lang.lblStatWins;
+            document.getElementById('lbl-stat-streak').innerText = lang.lblStatStreak;
+            document.getElementById('btn-reset-stats').innerText = lang.btnResetStats;
+            document.getElementById('btn-back-stats').innerText = lang.btnBack;
+
+            // Practice Screen
+            document.getElementById('practice-heading').innerHTML = `<i class="fa-solid fa-brain text-purple-600"></i> ${lang.practiceHeading}`;
+            document.getElementById('practice-sub').innerText = lang.practiceSub;
+            document.getElementById('btn-check-practice').innerText = lang.btnCheckPractice;
+            document.getElementById('btn-next-practice').innerText = lang.btnNextPractice;
+            document.getElementById('btn-back-practice').innerText = lang.btnBack;
+        }
+
+        // --- MATH EXPRESSION EVALUATOR ---
+        function safeEvaluate(str) {
+            try {
+                if (!/^[0-9+\-*/]+$/.test(str)) return null;
+                const tokens = str.match(/(\d+|\+|\-|\*|\/)/g);
+                if (!tokens) return null;
+
+                let pass1 = [];
+                for (let i = 0; i < tokens.length; i++) {
+                    let token = tokens[i];
+                    if (token === '*' || token === '/') {
+                        let prev = parseFloat(pass1.pop());
+                        let next = parseFloat(tokens[++i]);
+                        if (isNaN(prev) || isNaN(next)) return null;
+                        if (token === '/' && next === 0) return null;
+                        let res = token === '*' ? prev * next : Math.floor(prev / next);
+                        pass1.push(res.toString());
+                    } else {
+                        pass1.push(token);
+                    }
+                }
+
+                let result = parseFloat(pass1[0]);
+                if (isNaN(result)) return null;
+
+                for (let i = 1; i < pass1.length; i += 2) {
+                    let op = pass1[i];
+                    let val = parseFloat(pass1[i + 1]);
+                    if (isNaN(val)) return null;
+                    if (op === '+') result += val;
+                    if (op === '-') result -= val;
+                }
+
+                return result;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // --- EQUATION GENERATOR ---
+        function generateEquation(length) {
+            const ops = ['+', '-', '*'];
+            while (true) {
+                let op = ops[Math.floor(Math.random() * ops.length)];
+                let n1 = Math.floor(Math.random() * 90) + 1;
+                let n2 = Math.floor(Math.random() * 20) + 1;
+                let res;
+
+                if (op === '+') res = n1 + n2;
+                if (op === '-') res = n1 - n2;
+                if (op === '*') res = n1 * n2;
+
+                let eq = `${n1}${op}${n2}=${res}`;
+                if (eq.length === length && res >= 0) return eq;
+            }
+        }
+
+        // --- GAME MECHANICS ---
+        function initGame() {
+            target = generateEquation(eqLength);
+            currentRow = 0;
+            currentTile = 0;
+            guesses = Array(6).fill("");
+            gameOver = false;
+
+            document.getElementById('game-msg').innerText = "";
+
+            // Dynamic grid tile dimensions based on length
+            const tileSizeClass = eqLength === 8 ? 'w-9 h-10 sm:w-10 sm:h-11 text-base' : 'w-10 h-11 sm:w-11 sm:h-12 text-lg';
+
+            // Rebuild Grid
+            const grid = document.getElementById('grid');
+            grid.innerHTML = "";
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement('div');
+                row.className = 'flex gap-1 sm:gap-1.5 justify-center';
+                for (let j = 0; j < eqLength; j++) {
+                    const tile = document.createElement('div');
+                    tile.className = `${tileSizeClass} border-2 border-slate-300 rounded-xl flex items-center justify-center font-extrabold text-slate-800 bg-white shadow-sm transition-all`;
+                    tile.id = `tile-${i}-${j}`;
+                    row.appendChild(tile);
+                }
+                grid.appendChild(row);
+            }
+
+            // Reset Keyboard UI
+            document.querySelectorAll('.key').forEach(k => {
+                k.classList.remove('correct', 'present', 'absent');
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const activeScreen = document.querySelector('main > section:not(.hidden)');
+            if (!activeScreen || activeScreen.id !== 'screen-game' || gameOver) return;
+
+            if (e.key >= '0' && e.key <= '9') press(e.key);
+            if (['+', '-', '*', '/', '='].includes(e.key)) press(e.key);
+            if (e.key === 'Enter') check();
+            if (e.key === 'Backspace') del();
+        });
+
+        function press(key) {
+            if (!gameOver && currentTile < eqLength) {
+                guesses[currentRow] += key;
+                const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
+                if (tile) {
+                    tile.innerText = key;
+                    tile.classList.add('tile-pop', 'border-slate-500');
+                }
+                currentTile++;
+            }
+        }
+
+        function del() {
+            if (!gameOver && currentTile > 0) {
+                currentTile--;
+                guesses[currentRow] = guesses[currentRow].slice(0, -1);
+                const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
+                if (tile) {
+                    tile.innerText = "";
+                    tile.classList.remove('tile-pop', 'border-slate-500');
+                }
+            }
+        }
+
+        function check() {
+            if (gameOver) return;
+            const guess = guesses[currentRow];
+            const msg = document.getElementById('game-msg');
+            const lang = i18n[currentLang];
+
+            if (guess.length !== eqLength) {
+                msg.innerText = `${eqLength} ${lang.msgShort}`;
+                return;
+            }
+
+            const parts = guess.split('=');
+            if (parts.length !== 2) {
+                msg.innerText = lang.msgInvalidEq;
+                return;
+            }
+
+            const leftVal = safeEvaluate(parts[0]);
+            const rightVal = safeEvaluate(parts[1]);
+
+            if (leftVal === null || rightVal === null || leftVal !== rightVal) {
+                msg.innerText = lang.msgInvalidEq;
+                return;
+            }
+
+            msg.innerText = "";
+
+            let targetArr = target.split('');
+            const guessArr = guess.split('');
+            const results = Array(eqLength).fill('absent');
+
+            // Pass 1: Correct positions (Green)
+            for (let i = 0; i < eqLength; i++) {
+                if (guessArr[i] === targetArr[i]) {
+                    results[i] = 'correct';
+                    targetArr[i] = null;
+                }
+            }
+
+            // Pass 2: Present elsewhere (Yellow/Orange)
+            for (let i = 0; i < eqLength; i++) {
+                if (results[i] === 'correct') continue;
+                const idx = targetArr.indexOf(guessArr[i]);
+                if (idx !== -1) {
+                    results[i] = 'present';
+                    targetArr[idx] = null;
+                }
+            }
+
+            // Apply Tile styles with flip effect
+            for (let i = 0; i < eqLength; i++) {
+                const tile = document.getElementById(`tile-${currentRow}-${i}`);
+                const char = guessArr[i];
+                const status = results[i];
+
+                setTimeout(() => {
+                    if (tile) {
+                        tile.classList.add('tile-flip', status);
+                    }
+                    updateKeyboardColor(char, status);
+                }, i * 100);
+            }
+
+            setTimeout(() => {
+                if (guess === target) {
+                    msg.innerText = lang.msgWin;
+                    msg.className = "h-8 text-center text-sm font-bold text-emerald-600 flex items-center justify-center transition-all mb-2";
+                    gameOver = true;
+                    triggerConfetti();
+                    saveStat(true);
+                } else if (currentRow === 5) {
+                    msg.innerText = lang.msgLose + target;
+                    msg.className = "h-8 text-center text-sm font-bold text-rose-600 flex items-center justify-center transition-all mb-2";
+                    gameOver = true;
+                    saveStat(false);
+                } else {
+                    currentRow++;
+                    currentTile = 0;
+                }
+            }, eqLength * 100);
+        }
+
+        function updateKeyboardColor(char, status) {
+            const keyBtn = document.getElementById(`key-${char}`);
+            if (!keyBtn) return;
+
+            if (status === 'correct') {
+                keyBtn.classList.remove('present', 'absent');
+                keyBtn.classList.add('correct');
+            } else if (status === 'present' && !keyBtn.classList.contains('correct')) {
+                keyBtn.classList.remove('absent');
+                keyBtn.classList.add('present');
+            } else if (status === 'absent' && !keyBtn.classList.contains('correct') && !keyBtn.classList.contains('present')) {
+                keyBtn.classList.add('absent');
+            }
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        // --- LOCAL STORAGE STATISTICS ---
+        function saveStat(isWin) {
+            let stats = JSON.parse(localStorage.getItem('nerdle_stats')) || { played: 0, wins: 0, streak: 0 };
+            stats.played++;
+            if (isWin) {
+                stats.wins++;
+                stats.streak++;
+            } else {
+                stats.streak = 0;
+            }
+            localStorage.setItem('nerdle_stats', JSON.stringify(stats));
+        }
+
+        function loadStats() {
+            let stats = JSON.parse(localStorage.getItem('nerdle_stats')) || { played: 0, wins: 0, streak: 0 };
+            document.getElementById('stat-played').innerText = stats.played;
+            let winPct = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
+            document.getElementById('stat-wins').innerText = `${winPct}%`;
+            document.getElementById('stat-streak').innerText = stats.streak;
+        }
+
+        function resetStats() {
+            localStorage.removeItem('nerdle_stats');
+            loadStats();
+        }
+
+        // --- PRACTICE MODE ---
+        function generatePracticeQuestion() {
+            const ops = ['+', '-', '*'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            let a = Math.floor(Math.random() * 25) + 2;
+            let b = Math.floor(Math.random() * 12) + 2;
+
+            if (op === '+') practiceAns = a + b;
+            if (op === '-') {
+                if (a < b) [a, b] = [b, a];
+                practiceAns = a - b;
+            }
+            if (op === '*') practiceAns = a * b;
+
+            document.getElementById('practice-question').innerText = `${a} ${op} ${b} = ?`;
+            document.getElementById('practice-input').value = "";
+            document.getElementById('practice-msg').innerText = "";
+        }
+
+        function checkPractice() {
+            const inputVal = parseInt(document.getElementById('practice-input').value);
+            const msg = document.getElementById('practice-msg');
+            const lang = i18n[currentLang];
+
+            if (isNaN(inputVal)) return;
+
+            if (inputVal === practiceAns) {
+                msg.innerText = lang.practiceCorrect;
+                msg.className = "h-6 text-sm font-bold mb-4 text-emerald-600";
+                triggerConfetti();
+            } else {
+                msg.innerText = lang.practiceWrong;
+                msg.className = "h-6 text-sm font-bold mb-4 text-rose-600";
+            }
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            updateLanguageUI();
+            generatePracticeQuestion();
+            loadStats();
+        };
+    </script>
+</body>
+</html>
